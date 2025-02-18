@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Save Spells</title>
+    <link rel="stylesheet" href="https://use.typekit.net/zyq3log.css" />
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+        background: linear-gradient(90deg, #e6e0d5 50%, #f5f2eb 50%);
+        position: relative;
+        overflow: hidden;
+      }
+      .book {
+        display: flex;
+        width: 80%;
+        height: 80vh;
+        background: white;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .left-page {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-evenly;
+        align-items: center;
+        border-right: 2px solid #ccc;
+        padding: 20px;
+      }
+      .right-page {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-around;
+        justify-items: center;
+        align-items: center;
+        padding: 20px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 50px);
+        grid-template-rows: repeat(3, 50px);
+        gap: 20px;
+        position: relative;
+        justify-content: center;
+        justify-items: center;
+        align-items: center;
+      }
+      .dot {
+        width: 20px;
+        height: 20px;
+        background-color: black;
+        border-radius: 50%;
+        position: relative;
+        cursor: pointer;
+        user-select: none;
+      }
+      svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+      line {
+        stroke: black;
+        stroke-width: 4;
+        stroke-dasharray: 100;
+        stroke-dashoffset: 100;
+        animation: draw 0.3s linear forwards;
+      }
+      @keyframes draw {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      .button {
+        background-color: transparent;
+        border: 1px solid rgb(209, 213, 219);
+        border-radius: 0.5rem;
+        box-sizing: border-box;
+        color: #111827;
+        font-family: "Inter var", ui-sans-serif, system-ui, -apple-system,
+          system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+          sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+          "Noto Color Emoji";
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.25rem;
+        padding: 0.75rem 1rem;
+        text-align: center;
+        text-decoration: none #d1d5db solid;
+        text-decoration-thickness: auto;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+      }
+
+      .button:hover {
+        background-color: rgb(160, 160, 160);
+      }
+
+      .button:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+      }
+
+      .button:focus-visible {
+        box-shadow: none;
+      }
+
+      textarea {
+        height: 30vh;
+        width: 30vw;
+
+        resize: none;
+        font-size: 20px;
+        font-family: "carlmarx-handwriting-regular", sans-serif;
+        font-weight: 400;
+        font-style: normal;
+      }
+
+      input {
+        width: 30vw;
+        outline: none;
+        border: 1px solid transparent;
+        text-align: center;
+
+        font-size: 30px;
+        font-family: "carlmarx-handwriting-regular", sans-serif;
+        font-weight: 400;
+        font-style: normal;
+      }
+
+      input:hover {
+        border: 1px solid gray;
+        border-radius: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="book">
+      <div class="left-page">
+        <button class="button" onclick="back()">Back</button>
+        <button class="button" onclick="resetLines()">Reset Spell</button>
+        <div class="grid" id="grid-container">
+          <svg id="lines"></svg>
+        </div>
+      </div>
+      <div class="right-page">
+        <input id="name" type="text" placeholder="Spell Name" />
+        <textarea id="desc" placeholder="Spell Description"></textarea>
+        <button class="button" onclick="saveSpell()">Save Spell</button>
+      </div>
+    </div>
+
+    <script>
+      const grid = document.getElementById("grid-container");
+      const svg = document.getElementById("lines");
+      const spellName = document.getElementById("name");
+      const spellDesc = document.getElementById("desc");
+      const dots = [];
+      let lastDot = null;
+      let linesDrawn = new Set();
+      let isDragging = false;
+
+      for (let i = 0; i < 9; i++) {
+        const dot = document.createElement("div");
+        dot.classList.add("dot");
+        dot.dataset.index = i;
+        grid.appendChild(dot);
+        dots.push(dot);
+      }
+
+      dots.forEach((dot) => {
+        dot.addEventListener("mousedown", () => {
+          isDragging = true;
+          lastDot = dot;
+        });
+        dot.addEventListener("mouseup", () => {
+          isDragging = false;
+          lastDot = null;
+        });
+
+        dot.addEventListener("mouseenter", () => {
+          if (isDragging && lastDot && lastDot !== dot) {
+            const lineKey = `${lastDot.dataset.index}-${dot.dataset.index}`;
+            const reverseKey = `${dot.dataset.index}-${lastDot.dataset.index}`;
+
+            if (!linesDrawn.has(lineKey) && !linesDrawn.has(reverseKey)) {
+              // if (!canDraw(lastDot.dataset.index).includes(dot.dataset.index)) return;
+              drawLine(lastDot, dot);
+              linesDrawn.add(lineKey);
+            }
+          }
+          lastDot = dot;
+        });
+      });
+
+      function drawLine(dot1, dot2) {
+        const rect1 = dot1.getBoundingClientRect();
+        const rect2 = dot2.getBoundingClientRect();
+        const x1 =
+          rect1.left + rect1.width / 2 - grid.getBoundingClientRect().left;
+        const y1 =
+          rect1.top + rect1.height / 2 - grid.getBoundingClientRect().top;
+        const x2 =
+          rect2.left + rect2.width / 2 - grid.getBoundingClientRect().left;
+        const y2 =
+          rect2.top + rect2.height / 2 - grid.getBoundingClientRect().top;
+
+        const line = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "line"
+        );
+
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
+        line.style.strokeDasharray = "100";
+        line.style.strokeDashoffset = "100";
+        line.style.animation = "draw 0.3s linear forward";
+
+        svg.appendChild(line);
+      }
+
+      function cords() {
+        const cords = [];
+        linesDrawn.forEach((v1, v2) => {
+          const [x, y] = v1.split("-");
+          cords.push(Number(x));
+          cords.push(Number(y));
+        });
+
+        return cords.sort();
+      }
+
+      function resetLines() {
+        svg.innerHTML = "";
+        spellDesc.value = "";
+        spellName.value = "";
+        linesDrawn.clear();
+      }
+
+      function saveSpell() {
+        const name = spellName.value.toLowerCase();
+        const description = spellDesc.value;
+        window.runehaven.sendSpell(
+          name,
+          cords(),
+          Array.from(linesDrawn),
+          description
+        );
+
+        resetLines();
+      }
+
+      const back = () => window.runehaven.changeView("index");
+
+      document.body.onmouseup = (ev) => {
+        if (ev.button == 3) {
+          ev.preventDefault();
+          back();
+        }
+        if (ev.button == 1) {
+          if (isDragging && lastDot) {
+            isDragging = false;
+            lastDot = null;
+          }
+        }
+      };
+    </script>
+  </body>
+</html>

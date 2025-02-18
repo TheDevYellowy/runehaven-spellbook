@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Runehaven Spells</title>
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+        background: linear-gradient(180deg, #e6e0d5 50%, #f5f2eb 50%);
+
+        overflow-x: hidden;
+        overflow-y: hidden;
+      }
+      .container {
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 10px; /* Space between button and grid */
+      }
+
+      /* CSS */
+      .button {
+        width: 60%;
+        background-color: transparent;
+        border: 1px solid rgb(209, 213, 219);
+        border-radius: 0.5rem;
+        box-sizing: border-box;
+        color: #111827;
+        font-family: "Inter var", ui-sans-serif, system-ui, -apple-system,
+          system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+          sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+          "Noto Color Emoji";
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.25rem;
+        padding: 0.75rem 1rem;
+        text-align: center;
+        text-decoration: none #d1d5db solid;
+        text-decoration-thickness: auto;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+      }
+
+      .button:hover {
+        background-color: rgb(160, 160, 160);
+      }
+
+      .button:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+      }
+
+      .button:focus-visible {
+        box-shadow: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container" id="main">
+      <button class="button" id="getSpells">Read Book</button>
+      <button class="button" id="saveSpells">Write Spells</button>
+    </div>
+
+    <script>
+      const container = document.getElementById("main");
+      for (let i = 0; i < container.children.length; i++) {
+        const btn = container.children.item(i);
+        btn.addEventListener("click", () => {
+          window.runehaven.changeView(btn.id);
+        });
+      }
+
+      document.body.onmouseup = (ev) => {
+        if (![0, 2].includes(ev.button)) ev.preventDefault();
+      };
+    </script>
+  </body>
+</html>

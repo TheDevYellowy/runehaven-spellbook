@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Spellbook</title>
+    <link rel="stylesheet" href="https://use.typekit.net/zyq3log.css" />
+    <style>
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f0f0f0;
+        background: linear-gradient(90deg, #e6e0d5 50%, #f5f2eb 50%);
+        position: relative;
+        overflow: hidden;
+      }
+      .book {
+        display: flex;
+        width: 80%;
+        height: 80vh;
+        background: white;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+        border-radius: 10px;
+        overflow: hidden;
+      }
+      .left-page {
+        flex: 1;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-right: 2px solid #ccc;
+        padding: 20px;
+      }
+      .right-page {
+        flex: 1;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 20px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(3, 50px);
+        grid-template-rows: repeat(3, 50px);
+        gap: 20px;
+        position: relative;
+        justify-content: center;
+        justify-items: center;
+        align-items: center;
+      }
+      .dot {
+        width: 20px;
+        height: 20px;
+        background-color: black;
+        border-radius: 50%;
+        position: relative;
+        cursor: pointer;
+        user-select: none;
+      }
+      svg {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+      line {
+        stroke: black;
+        stroke-width: 4;
+        stroke-dasharray: 100;
+        stroke-dashoffset: 100;
+        animation: draw 0.3s linear forwards;
+      }
+      @keyframes draw {
+        to {
+          stroke-dashoffset: 0;
+        }
+      }
+      .button {
+        background-color: transparent;
+        border: 1px solid rgb(209, 213, 219);
+        border-radius: 0.5rem;
+        box-sizing: border-box;
+        color: #111827;
+        font-family: "Inter var", ui-sans-serif, system-ui, -apple-system,
+          system-ui, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans",
+          sans-serif, "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol",
+          "Noto Color Emoji";
+        font-size: 0.875rem;
+        font-weight: 600;
+        line-height: 1.25rem;
+        padding: 0.75rem 1rem;
+        text-align: center;
+        text-decoration: none #d1d5db solid;
+        text-decoration-thickness: auto;
+        box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        cursor: pointer;
+        user-select: none;
+        -webkit-user-select: none;
+        touch-action: manipulation;
+      }
+
+      .button:hover {
+        background-color: rgb(160, 160, 160);
+      }
+
+      .button:focus {
+        outline: 2px solid transparent;
+        outline-offset: 2px;
+      }
+
+      .button:focus-visible {
+        box-shadow: none;
+      }
+
+      button.clear {
+        background-color: transparent;
+        border: transparent;
+        outline: transparent;
+        cursor: pointer;
+        width: 30px;
+        height: 30px;
+        font-size: 30px;
+      }
+
+      h1 {
+        font-family: "carlmarx-handwriting-regular", sans-serif;
+        font-weight: 400;
+        font-style: normal;
+      }
+
+      textarea {
+        height: 30vh;
+        width: 30vw;
+
+        resize: none;
+        border: none;
+        outline: none;
+        font-size: 20px;
+        font-family: "carlmarx-handwriting-regular", sans-serif;
+        font-weight: 400;
+        font-style: normal;
+      }
+
+      textarea:focus {
+        border: none;
+        outline: none;
+      }
+    </style>
+  </head>
+  <body>
+    <!-- <button class="button" onclick="back()">Back</button> -->
+    <div class="book">
+      <div class="left-page">
+        <button class="clear" id="left">&ltcc;</button>
+        <div class="grid" id="grid-container">
+          <svg id="lines" draggable="false"></svg>
+        </div>
+      </div>
+      <div class="right-page">
+        <div class="spell-info">
+          <h1 id="name"></h1>
+          <textarea id="desc" readonly></textarea>
+        </div>
+        <button class="clear" id="right">&gtcc;</button>
+      </div>
+    </div>
+
+    <script>
+      const grid = document.getElementById("grid-container");
+      const svg = document.getElementById("lines");
+      const spellName = document.getElementById("name");
+      const spellDesc = document.getElementById("desc");
+      const dots = [];
+      /** @type {{ cords: number[]; name: string; lines: string[] }[]} */
+      let spells;
+      let index = 0;
+      let linesDrawn = new Set();
+
+      getSpells();
+
+      for (let i = 0; i < 9; i++) {
+        const dot = document.createElement("div");
+        dot.classList.add("dot");
+        dot.dataset.index = i;
+        grid.appendChild(dot);
+        dots.push(dot);
+      }
+
+      function drawLine(dot1, dot2) {
+        const rect1 = dot1.getBoundingClientRect();
+        const rect2 = dot2.getBoundingClientRect();
+        const x1 =
+          rect1.left + rect1.width / 2 - grid.getBoundingClientRect().left;
+        const y1 =
+          rect1.top + rect1.height / 2 - grid.getBoundingClientRect().top;
+        const x2 =
+          rect2.left + rect2.width / 2 - grid.getBoundingClientRect().left;
+        const y2 =
+          rect2.top + rect2.height / 2 - grid.getBoundingClientRect().top;
+
+        const line = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "line"
+        );
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
+        line.style.strokeDasharray = "100";
+        line.style.strokeDashoffset = "100";
+        line.style.animation = "draw 0.3s linear forwards";
+        svg.appendChild(line);
+      }
+
+      /** @param {{ cords: number[]; name: string; lines: string[]; description: string }} spell */
+      function drawSpell(spell) {
+        svg.innerHTML = "";
+        spellName.innerText = spell.name;
+        spellDesc.innerText = spell.description;
+        spell.lines.forEach((key) => {
+          const [dot1, dot2] = key.split("-");
+          drawLine(dots[Number(dot1)], dots[Number(dot2)]);
+        });
+      }
+
+      document.getElementById("left").addEventListener("click", () => {
+        if (index == 0) index = spells.length;
+        index--;
+        drawSpell(spells[index]);
+      });
+
+      document.getElementById("right").addEventListener("click", () => {
+        if (index == spells.length - 1) index = -1;
+        index++;
+        drawSpell(spells[index]);
+      });
+
+      function cords() {
+        const cords = [];
+        linesDrawn.forEach((v1, v2) => {
+          const [x, y] = v1.split("-");
+          cords.push(Number(x));
+          cords.push(Number(y));
+        });
+
+        return cords.sort();
+      }
+
+      function resetLines() {
+        svg.innerHTML = "";
+        spellName.innerText = "";
+        spellDesc.innerText = "";
+        linesDrawn.clear();
+        lastDot = null;
+      }
+
+      const back = () => runehaven.changeView("index");
+
+      document.body.onmouseup = (ev) => {
+        if (ev.button == 3) {
+          ev.preventDefault();
+          back();
+        }
+      };
+
+      function getSpells() {
+        runehaven.getSpells().then((res) => {
+          spells = res;
+          spells.sort((a, b) => a.name.localeCompare(b.name));
+
+          drawSpell(spells[index]);
+        });
+      }
+
+      document.onkeydown = (ev) => {
+        if (ev.ctrlKey && ev.key == "f") {
+          ev.preventDefault();
+          return runehaven.changeView("search");
+        }
+
+        if (ev.ctrlKey && ev.key == "x") {
+          ev.preventDefault();
+          runehaven.deleteSpell(spells[index].name);
+          getSpells();
+        }
+      };
+    </script>
+  </body>
+</html>
